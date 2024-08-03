@@ -1,0 +1,101 @@
+services:
+  postgres:
+    container_name: ms_pg_sql
+    image: postgres
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=p@ssw0rd
+      - PGDATA=/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - microservices-net
+    restart: unless-stopped
+
+  mongodb:
+    container_name: ms_mongo_db
+    image: mongo
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=p@ssw0rd
+#      - MONGO_INITDB_DATABASE=customer
+    networks:
+      - microservices-net
+    restart: unless-stopped
+#    volumes:
+#      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+
+  mail-dev:
+    container_name: ms_mail_dev
+    image: maildev/maildev
+    ports:
+      - 1080:1080
+      - 1025:1025
+    networks:
+      - microservices-net
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zookeeper
+    container_name: ms_zookeeper
+    restart: unless-stopped
+    ports:
+      - "22181:2181"
+    networks:
+      - microservices-net
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-server:latest
+    hostname: kafka
+    container_name: ms_kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+      - "9092"
+    networks:
+      - microservices-net
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+
+  control-center:
+    image: confluentinc/cp-enterprise-control-center:latest
+    hostname: control-center
+    container_name: ms_control-center
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+      - kafka
+    ports:
+      - "29021:9021"
+    networks:
+      - microservices-net
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'kafka:9092'
+      CONTROL_CENTER_KAFKA_DC_BOOTSTRAP_SERVERS: 'kafka:9092'
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      PORT: 9021
+
+networks:
+  microservices-net:
+    driver: bridge
