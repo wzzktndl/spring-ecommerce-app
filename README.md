@@ -49,6 +49,10 @@ The architecture of the E-Commerce microservices application is depicted in the 
 10. **Distributed Tracing (Zipkin)**
     - Traces and monitors requests across microservices.
 
+11. **Authentication (Keycloak)**
+   - Manages authentication and authorization.
+   - Requires inputting credentials when calling services.
+
 ## Technologies Used
 
 - **Backend**: Spring Boot, Spring Cloud
@@ -79,8 +83,22 @@ The architecture of the E-Commerce microservices application is depicted in the 
    ```bash
    docker-compose up
    ```
-   
-3. Start micro-services from config-service,discovery-service then another service.
+
+3. Setup KeyCloak
+- Go to `http://localhost:9098`.
+- Create realm `micro-service`.
+- Create client `Client ID` with `micro-services-api`.
+- Check `Client authentication` and `Authorization` on, but checkout another.
+- Get `Client Secret` 
+- The `authorization_endpoint` will be `http://localhost:9098/realms/micro-service/protocol/openid-connect/auth`
+```text
+If using postman, change authentication to oauth2 and configure Grant type to Client Credentials and input your credential 
+- Client ID
+- Client Secret
+- Access Token URL
+```   
+
+4. Start micro-services from config-service,discovery-service then another service.
    
 ## License
 
